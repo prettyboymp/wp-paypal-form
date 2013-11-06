@@ -12,7 +12,7 @@ class WP_PayPal_Rest_Interface {
 		if ( defined( 'PAYPAL_REST_ENDPOINT' ) ) {
 			$this->endpoint = untrailingslashit(PAYPAL_REST_ENDPOINT);
 		} else {
-			$this->endpoint = 'https://api.sandbox.paypal.com';
+			$this->endpoint = 'https://api.paypal.com';
 		}
 	}
 
