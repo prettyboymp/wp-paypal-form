@@ -25,7 +25,11 @@ class WP_PayPal_API {
 
 	public function send( $path, $payload, $headers = array( ), $method = 'POST' ) {
 		$rest = new WP_PayPal_Rest_Interface();
-
+		$access_token = $this->credentialHandler->getAccessToken();
+		
+		if(  is_wp_error( $access_token )) {
+			return $access_token;
+		}
 		$headers = wp_parse_args( $headers, array(
 			'Accept' => 'application/json',
 			'Accept-Language' => 'en_US',

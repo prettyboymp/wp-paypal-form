@@ -8,7 +8,7 @@ class WP_PayPal_Form_Admin {
 	public static function register_settings() {
 		// register settings
 		Voce_Settings_API::GetInstance()
-			->add_page( 'PayPal Form', 'Settings', 'wp-paypal-form', 'manage_options', '', 'edit.php?post_type=paypal_transaction' )
+			->add_page( 'PayPal Form', 'Settings', 'wp-paypal-form', 'manage_options', '', 'paypal-transactions' )
 				->add_group( 'PayPal Application Settings', 'paypal-client-app', null, 'In order to connect to PayPal to process payments, you will need to create a PayPal application.  ' .
 					'Once created, PayPal will give you a Client ID and Secret for the application that WordPress can use ' .
 					'to authenticate with PayPal.  To learn more, reade about ' .
@@ -42,8 +42,28 @@ class WP_PayPal_Form_Admin {
 						'description' => '<br />Choose a page to redirect the user to after the transaction has processed. '
 					) )
 				->group
+					->add_setting( 'Confirmation Email Subject', 'email_subject', array(
+						'description' => '<br />Enter the subject line for the email that is sent to the user after their payment ' .
+						'has been processed.  The following placeholders are available:<br /> '.
+						'<strong>%firstname%</strong> &ndash; The payer\'s first name.<br />'.
+						'<strong>%lastname%</strong> &ndash; The payer\'s last name.<br />'.
+						'<strong>%paymentid%</strong> &ndash; The Payment ID returned from PayPal.<br />'.
+						'<strong>%refnumber%</strong> &ndash; The ID of the payment stored in WordPress.<br />'
+					) )
+				->group
 					->add_setting( 'Confirmation Email Text', 'email_text', array(
 						'display_callback' => 'vs_display_textarea',
+						'description' => '<br />Enter the confirmation text for the email that should be sent to the user after their payment ' .
+						'has been processed.<br />'.
+						'<strong>%firstname%</strong> &ndash; The payer\'s first name.<br />'.
+						'<strong>%lastname%</strong> &ndash; The payer\'s last name.<br />'.
+						'<strong>%paymentid%</strong> &ndash; The Payment ID returned from PayPal.<br />'.
+						'<strong>%paymentinfo%</strong> &ndash; Formatted transaction details.<br />'.
+						'<strong>%refnumber%</strong> &ndash; The ID of the payment stored in WordPress.<br />'
+					) )
+				->group
+					->add_setting( 'Confirmation Email BCC', 'email_text', array(
+						'sanitize_callbacks' => array('vs_sanitize_email'),
 						'description' => '<br />Enter the confirmation text for the email that should be sent to the user after their payment ' .
 						'has been processed.'
 					) )

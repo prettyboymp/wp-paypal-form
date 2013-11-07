@@ -103,9 +103,9 @@ class WP_PayPal_Form {
 					<select id="cc_type" name="cc_type" required="required">
 						<option value=""></option>
 						<option value="visa">Visa</option>
-						<option vlaue="mastercard">MasterCard</option>
-						<option vlaue="discover">Discover</option>
-						<option vlaue="amex">American Express</option>
+						<option value="mastercard">MasterCard</option>
+						<option value="discover">Discover</option>
+						<option value="amex">American Express</option>
 					</select>
 				</p>
 				<p>
@@ -404,46 +404,46 @@ class WP_PayPal_Form {
 
 		if ( 0 === count( $err->get_error_codes() ) ) {
 			$settings_api = Voce_Settings_API::GetInstance();
-			$tran_amount = floatval( $settings_api->get_setting( 'amount', 'paypal-cc-form' ) );
+			$tran_amount = round( floatval( $settings_api->get_setting( 'amount', 'paypal-cc-form' ) ), 2 );
 			$tran_desc = $settings_api->get_setting( 'description', 'paypal-cc-form' );
 
 			//build payment object
-			$payment = array(
-				'intent' => 'sale',
-				'payer' => array(
-					'payment_method' => 'credit_card',
-					'funding_instruments' => array(
-						array(
-							"credit_card" => array(
-								'number' => $cc_number,
-								'type' => $cc_type,
-								'expire_month' => $cc_expire_month,
-								'expire_year' => $cc_expire_year,
-								'cvv2' => $cc_cvv2,
-								'first_name' => $cc_first_name,
-								'last_name' => $cc_last_name,
-								'billing_address' => array(
-									'line1' => $address1,
-									'line2' => $address2,
-									'city' => $city,
-									'country_code' => 'US',
-									'postal_code' => $zip,
-									'state' => $state,
-									'phone' => $phonenumber
+			$payment = ( object ) array(
+					'intent' => 'sale',
+					'payer' => array(
+						'payment_method' => 'credit_card',
+						'funding_instruments' => array(
+							array(
+								"credit_card" => array(
+									'number' => $cc_number,
+									'type' => $cc_type,
+									'expire_month' => $cc_expire_month,
+									'expire_year' => $cc_expire_year,
+									'cvv2' => $cc_cvv2,
+									'first_name' => $cc_first_name,
+									'last_name' => $cc_last_name,
+									'billing_address' => array(
+										'line1' => $address1,
+										'line2' => $address2,
+										'city' => $city,
+										'country_code' => 'US',
+										'postal_code' => $zip,
+										'state' => $state,
+										'phone' => $phonenumber
+									)
 								)
 							)
 						)
-					)
-				),
-				'transactions' => array(
-					array(
-						'amount' => array(
-							'total' => $tran_amount,
-							'currency' => 'USD'
-						),
-						'description' => $tran_desc
 					),
-				)
+					'transactions' => array(
+						array(
+							'amount' => array(
+								'total' => $tran_amount,
+								'currency' => 'USD'
+							),
+							'description' => $tran_desc
+						),
+					)
 			);
 
 			//save a copy in the db;
@@ -491,8 +491,39 @@ class WP_PayPal_Form {
 
 			if ( !$process_error ) {
 				//send confirmation email
+				$headers = array( );
+				$bcc = $settings_api->get_setting( 'email_bcc', 'paypal-cc-form' );
+				if ( !empty( $bcc ) ) {
+					$headers['from'] = $bcc;
+					$headers['bcc'] = $bcc;
+				}
+
+				$subject = $settings_api->get_setting( 'email_subject', 'paypal-cc-form' );
+				$replace = array(
+					'%firstname%' => $first_name,
+					'%lastname%' => $last_name,
+					'%paymentid%' => $payment->id,
+					'%refnumber%' => $this->payment_id
+				);
+				$subject = str_replace( array_keys( $replace ), array_values( $replace ), $subject );
+
 				$message = $settings_api->get_setting( 'email_text', 'paypal-cc-form' );
-				wp_mail( $email, 'Thank You for Your Payment', $message );
+				$replace['%paymentinfo%'] = <<<PAYMENTINFO
+Purchaser: {$first_name} {$last_name}
+Payment ID: {$payment->id}
+Reference #: {$this->payment_id}
+Order Total: \${$tran_amount}
+
+Billing Information:
+$cc_first_name $cc_last_name
+$address1
+$address2
+$city, $state  $zip
+PAYMENTINFO;
+
+				$message = str_replace( array_keys( $replace ), array_values( $replace ), $message );
+
+				wp_mail( $email, $subject, $message, $headers );
 
 				do_action( 'paypal_payment_approved', $payment, $this->payment_id );
 
